@@ -51,20 +51,20 @@ def run_simulation():
 
     positions = [r.copy()]
    
-    # print(f"current acceleration: {a}")
+    print(f"current acceleration: {a}")
     next_acceleration = calculate_acceleration(r)
     previous_acceleration, current_acceleration = update_accelerations(a, next_acceleration)
-    # print(f"initial previous_acceleration: {previous_acceleration}, initial current_acceleration: {current_acceleration}")
+    print(f"initial previous_acceleration: {previous_acceleration}, initial current_acceleration: {current_acceleration}")
 
-    for timestep in range(50):
+    for timestep in range(100):
 
-        print(f"loop number: {timestep}")
+        # print(f"loop number: {timestep}")
 
         # update position takes the current position, velocity, acceleration; previous acceleration; timestep
         # returns only the next position
-        print(f"previous acceleration: {previous_acceleration}")
+        # print(f"previous acceleration: {previous_acceleration}")
         r = update_position(r, v, current_acceleration, previous_acceleration, Δt)
-        print(f"updated_position: {r}")
+        # print(f"updated_position: {r}")
         positions.append(r)
 
         # calculate acceleration takes the next position and only returns the next acceleration
@@ -77,7 +77,7 @@ def run_simulation():
         previous_acceleration, current_acceleration = update_accelerations(current_acceleration, a)
 
     # print("now running simulation")
-    print(positions)
+    # print(positions)
     return np.array(positions)
 
 sun_earth = run_simulation()

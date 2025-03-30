@@ -9,8 +9,10 @@ with open('parameters_solar.json') as f:
 class Simulation():
 
     def __init__(self):
-        self.timestep = parameters_solar['timestep']
         self.num_iterations = parameters_solar['num_iterations']
+        self.timestep = parameters_solar['timestep']
+        self.grav_constant = parameters_solar['grav_const']
+        self.sun_mass = parameters_solar['bodies'][0]['mass']
 
         # holds the body objects
         self.body_list = []
@@ -18,7 +20,7 @@ class Simulation():
         self.patch_list = []
 
     def read_input_data(self):
-        body_object_list = []
+        # body_object_list = []
         for body in parameters_solar['bodies']:
             body_object = Body(
                 body['name'], 
@@ -26,24 +28,53 @@ class Simulation():
                 body['orbital_radius'],
                 body['colour']
             )
-            body_object_list.append(body_object)
-        #return body_object_list
+            self.body_list.append(body_object)
+        #return self.body_list
 
     def run_simulation(self):
-        self.read_input_data()
 
-        """
+        self.read_input_data()
         
         """
+        loop through the list of planets and calculate next acceleration
+        set previous and current acceleration
+        """
 
+        # calculate initial accelerations
+        for planet in range(len(self.body_list)):
+            print(self.body_list[planet].name)
+            print(self.body_list[planet].previous_acceleration)
+            self.body_list[planet].next_acceleration = self.calc_acceleration(
+                self.body_list[planet].position
+            )
+            (self.body_list[planet].previous_acceleration, 
+            self.body_list[planet].acceleration) = self.update_accelerations(
+                planet
+            )
+            # set previous acceleration to current acceleration for 
+            # inital condition 
+            self.body_list[planet].previous_acceleration = (
+                self.body_list[planet].acceleration
+            ) 
+
+            print(self.body_list[planet].name)
+            print(self.body_list[planet].previous_acceleration)
+            print(self.body_list[planet].acceleration)
+        
     def step_forward():
         pass 
 
-    def calc_acceleration():
-        pass
+    def calc_acceleration(self, next_position):
+        r_mag = np.linalg.norm(next_position)
+        next_acceleration = (
+            -self.grav_constant * self.sun_mass * next_position / r_mag ** 3
+        )
+        return next_acceleration
 
-    def update_calculation():
-        pass
+    def update_accelerations(self, planet):
+        prev_a = self.body_list[planet].acceleration.copy()
+        new_a = self.body_list[planet].next_acceleration
+        return prev_a, new_a
 
     def calc_PE():
         pass
@@ -67,6 +98,9 @@ class Body():
         self.position = np.array([orbital_radius, 0], dtype=float)
         # print(f"initial position: {self.position}")
 
+        #list of positions that will be graphically represented
+        self.positions = [self.position.copy()]
+
         if orbital_radius != 0:
             initial_velocity = math.sqrt(
                 (parameters_solar['grav_const'] * 
@@ -77,18 +111,20 @@ class Body():
             initial_velocity = 0
         
         self.velocity = np.array([0, initial_velocity], dtype=float)
-        # print(f"initial velocity: {self.velocity}")
+        #print(f"initial velocity: {self.velocity}")
 
         self.acceleration = np.zeros(2)
-        self.prev_acceleration = np.zeros(2)
+        self.next_acceleration = np.zeros(2)
+        self.previous_acceleration = np.zeros(2)
 
 
     def update_position(self):
         next_position = (
-            self.position + (self.velocity * self.timestep)
-            + (4 * self.acceleration - self.prev_acceleration) 
-            * (self.timestep ** 2) / 6
+            self.position + (self.velocity * self.timestep) +
+            (4 * self.acceleration - self.prev_acceleration) *
+            (self.timestep ** 2) / 6
         )
+        return next_position
 
     def update_velocity(self, new_a):
         next_velocity = (
