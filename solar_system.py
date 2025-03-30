@@ -31,19 +31,9 @@ class Simulation():
             self.body_list.append(body_object)
         #return self.body_list
 
-    def run_simulation(self):
+    def calc_initial_conditions(self):
 
-        self.read_input_data()
-        
-        """
-        loop through the list of planets and calculate next acceleration
-        set previous and current acceleration
-        """
-
-        # calculate initial accelerations
         for planet in range(len(self.body_list)):
-            print(self.body_list[planet].name)
-            print(self.body_list[planet].previous_acceleration)
             self.body_list[planet].next_acceleration = self.calc_acceleration(
                 self.body_list[planet].position
             )
@@ -57,17 +47,44 @@ class Simulation():
                 self.body_list[planet].acceleration
             ) 
 
-            print(self.body_list[planet].name)
-            print(self.body_list[planet].previous_acceleration)
-            print(self.body_list[planet].acceleration)
+    def run_simulation(self):
+
+        self.read_input_data()
+        self.calc_initial_conditions()
+
+        for timestep in range(self.num_iterations):
+
+            for planet in range(len(self.body_list)):
+                # update the position
+                self.body_list[planet].position = (
+                    self.body_list[planet].update_position()
+                )
+                # append the new position to the list of positions
+                self.body_list[planet].positions.append(
+                    self.body_list[planet].position
+                )
+                # calculate the acceleration
+                self.body_list[planet].acceleration = (
+                    self.calc_acceleration(planet)
+                )
+            
+        
+        print(self.body_list[planet].positions)
+
         
     def step_forward():
         pass 
 
-    def calc_acceleration(self, next_position):
-        r_mag = np.linalg.norm(next_position)
+    def calc_acceleration(self, planet_index):
+        """
+        calculates net acceleration from body i on all other bodies j
+        """
+        r_mag = np.linalg.norm(self.body_list[planet_index].position)
         next_acceleration = (
-            -self.grav_constant * self.sun_mass * next_position / r_mag ** 3
+            -self.grav_constant 
+            * self.sun_mass 
+            * self.body_list[planet_index].position
+            / r_mag ** 3
         )
         return next_acceleration
 
@@ -121,7 +138,7 @@ class Body():
     def update_position(self):
         next_position = (
             self.position + (self.velocity * self.timestep) +
-            (4 * self.acceleration - self.prev_acceleration) *
+            (4 * self.acceleration - self.previous_acceleration) *
             (self.timestep ** 2) / 6
         )
         return next_position
