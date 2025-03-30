@@ -72,6 +72,8 @@ class Simulation():
                 self.body_list[planet].acceleration = (
                     self.calc_acceleration_by_index(planet)
                 )
+                # update the velocity
+                self.body_list[planet].velocity
             
     def step_forward():
         pass 
