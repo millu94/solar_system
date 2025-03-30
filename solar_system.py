@@ -34,13 +34,18 @@ class Simulation():
     def calc_initial_conditions(self):
 
         for planet in range(len(self.body_list)):
-            self.body_list[planet].next_acceleration = self.calc_acceleration(
-                self.body_list[planet].position
+            # use position-based version for initialisation
+            self.body_list[planet].next_acceleration = (
+                self.calc_acceleration_by_position(
+                    self.body_list[planet].position
+                )
             )
+
             (self.body_list[planet].previous_acceleration, 
             self.body_list[planet].acceleration) = self.update_accelerations(
                 planet
             )
+
             # set previous acceleration to current acceleration for 
             # inital condition 
             self.body_list[planet].previous_acceleration = (
@@ -65,28 +70,44 @@ class Simulation():
                 )
                 # calculate the acceleration
                 self.body_list[planet].acceleration = (
-                    self.calc_acceleration(planet)
+                    self.calc_acceleration_by_index(planet)
                 )
             
-        
-        print(self.body_list[planet].positions)
-
-        
     def step_forward():
         pass 
 
-    def calc_acceleration(self, planet_index):
+    def calc_acceleration_by_position(self, next_position):
         """
         calculates net acceleration from body i on all other bodies j
         """
-        r_mag = np.linalg.norm(self.body_list[planet_index].position)
-        next_acceleration = (
-            -self.grav_constant 
-            * self.sun_mass 
-            * self.body_list[planet_index].position
-            / r_mag ** 3
+        total_acceleration = np.zeros(2)
+        
+        for body in self.body_list:
+            if np.array_equal(body.position, next_position):  # Skip self
+                continue
+                
+            r_ji = body.position - next_position
+            r_mag = np.linalg.norm(r_ji)
+            
+            if r_mag > 0:  # Avoid division by zero
+                total_acceleration += (
+                    -self.grav_constant 
+                    * body.mass 
+                    * r_ji 
+                    / r_mag**3
+                )
+        
+        return total_acceleration
+
+    def calc_acceleration_by_index(self, body_index):
+        """
+        Calculates acceleration for a specific body in body_list (used during 
+        simulation).
+        More efficient as it can access body properties directly.
+        """
+        return self.calc_acceleration_by_position(
+            self.body_list[body_index].position
         )
-        return next_acceleration
 
     def update_accelerations(self, planet):
         prev_a = self.body_list[planet].acceleration.copy()
