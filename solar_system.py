@@ -40,6 +40,7 @@ class Simulation():
                     self.body_list[planet].position
                 )
             )
+            # print(f"{self.body_list[3].name}'s next acceleration: {self.body_list[3].next_acceleration}")
 
             (self.body_list[planet].previous_acceleration, 
             self.body_list[planet].acceleration) = self.update_accelerations(
@@ -56,31 +57,52 @@ class Simulation():
 
         self.read_input_data()
         self.calc_initial_conditions()
+        
+        print(f"earth initial position: {self.body_list[3].position}")
+        # print(f"earth initial velocity: {self.body_list[3].velocity}")
+        # print(f"earth initial timestep: {self.body_list[3].timestep}")
+        # print(f"earth initial acceleration: {self.body_list[3].acceleration}")
+        # print(f"earth initial previous acceleration: {self.body_list[3].previous_acceleration}")
 
-        for timestep in range(self.num_iterations):
+        # for timestep in range(self.num_iterations):
+        for timestep in range(1000):
+            print(f"timestep: {timestep}")
+            self.step_forward()
+            # print(f"earth updated position: {self.body_list[3].position}")
 
-            for planet in range(len(self.body_list)):
-                # update the position
-                self.body_list[planet].position = (
-                    self.body_list[planet].update_position()
-                )
-                # append the new position to the list of positions
-                self.body_list[planet].positions.append(
-                    self.body_list[planet].position
-                )
-                # calculate the acceleration
-                self.body_list[planet].acceleration = (
-                    self.calc_acceleration_by_index(planet)
-                )
-                # update the velocity
-                self.body_list[planet].velocity
-            
-    def step_forward():
-        pass 
+    
+    def step_forward(self):
+
+        for planet in range(len(self.body_list)):
+            # update the position
+            self.body_list[planet].position = (
+                self.body_list[planet].update_position()
+            )
+            # append the new position to the list of positions
+            self.body_list[planet].positions.append(
+                self.body_list[planet].position
+            )
+            # calculate the next acceleration
+            self.body_list[planet].next_acceleration = (
+                self.calc_acceleration_by_index(planet)
+            )
+            # update the velocity
+            self.body_list[planet].velocity = (
+                self.body_list[planet].update_velocity()
+            )
+            # update accelerations
+            (self.body_list[planet].previous_acceleration, 
+            self.body_list[planet].acceleration) = (
+                self.update_accelerations(planet)
+            )
+         
 
     def calc_acceleration_by_position(self, next_position):
         """
         calculates net acceleration from body i on all other bodies j
+
+        intially, next_position is the orbital radius of the planet whose
+        acceleration is being calculated 
         """
         total_acceleration = np.zeros(2)
         
@@ -88,7 +110,7 @@ class Simulation():
             if np.array_equal(body.position, next_position):  # Skip self
                 continue
                 
-            r_ji = body.position - next_position
+            r_ji = next_position - body.position
             r_mag = np.linalg.norm(r_ji)
             
             if r_mag > 0:  # Avoid division by zero
@@ -115,6 +137,39 @@ class Simulation():
         prev_a = self.body_list[planet].acceleration.copy()
         new_a = self.body_list[planet].next_acceleration
         return prev_a, new_a
+    
+    def visualise_orbits(self):
+        plt.figure(figsize=(10, 10))
+        ax = plt.gca()
+        
+        # Set equal aspect and grid
+        ax.set_aspect('equal')
+        ax.grid(True, linestyle='--', alpha=0.7)
+        
+        # Plot each body's orbit
+        for body in self.body_list:
+            positions = np.array(body.positions)
+            x = positions[:, 0]
+            y = positions[:, 1]
+            
+            # Plot orbit path
+            plt.plot(x, y, color=body.colour, label=body.name, alpha=0.7)
+            
+            # Plot current position
+            plt.scatter(x[-1], y[-1], color=body.colour, s=100 if body.name.lower() == 'sun' else 30)
+        
+        # Set labels and legend
+        plt.title('Solar System Simulation')
+        plt.xlabel('X Position (AU)')
+        plt.ylabel('Y Position (AU)')
+        plt.legend(loc='upper right')
+        
+        # Set limits based on maximum orbital radius
+        max_radius = max(body.orbital_radius for body in self.body_list)
+        plt.xlim(-max_radius*1.1, max_radius*1.1)
+        plt.ylim(-max_radius*1.1, max_radius*1.1)
+        
+        plt.show()
 
     def calc_PE():
         pass
@@ -162,16 +217,19 @@ class Body():
         next_position = (
             self.position + (self.velocity * self.timestep) +
             (4 * self.acceleration - self.previous_acceleration) *
-            (self.timestep ** 2) / 6
+            self.timestep ** 2 / 6
         )
         return next_position
 
-    def update_velocity(self, new_a):
+    def update_velocity(self):
         next_velocity = (
-            self.velocity + 
-            ((2 * new_a) + (5 * self.acceleration) - prev_a)
-
+            self.velocity + (
+                2 * self.next_acceleration
+                + 5 * self.acceleration
+                - self.previous_acceleration
+            ) * self.timestep / 6
         )
+        return next_velocity
 
     def calc_KE(self):
         pass
@@ -197,6 +255,7 @@ def main():
 
     simulation = Simulation()
     simulation.run_simulation()
+    simulation.visualise_orbits()
     # print(f"The timestep is {parameters_solar['timestep']}")
     # for body in parameters_solar['bodies']: print(f"{body['name']} has mass {body['mass']}")
 
