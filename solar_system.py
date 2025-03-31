@@ -29,7 +29,6 @@ class Simulation():
                 body['colour']
             )
             self.body_list.append(body_object)
-        #return self.body_list
 
     def calc_initial_conditions(self):
 
@@ -57,18 +56,12 @@ class Simulation():
 
         self.read_input_data()
         self.calc_initial_conditions()
-        
-        print(f"earth initial position: {self.body_list[3].position}")
-        # print(f"earth initial velocity: {self.body_list[3].velocity}")
-        # print(f"earth initial timestep: {self.body_list[3].timestep}")
-        # print(f"earth initial acceleration: {self.body_list[3].acceleration}")
-        # print(f"earth initial previous acceleration: {self.body_list[3].previous_acceleration}")
 
         # for timestep in range(self.num_iterations):
         for timestep in range(1000):
             print(f"timestep: {timestep}")
             self.step_forward()
-            # print(f"earth updated position: {self.body_list[3].position}")
+            
 
     
     def step_forward(self):
