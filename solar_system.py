@@ -39,7 +39,6 @@ class Simulation():
                     self.body_list[planet].position
                 )
             )
-            # print(f"{self.body_list[3].name}'s next acceleration: {self.body_list[3].next_acceleration}")
 
             (self.body_list[planet].previous_acceleration, 
             self.body_list[planet].acceleration) = self.update_accelerations(
@@ -51,26 +50,43 @@ class Simulation():
             self.body_list[planet].previous_acceleration = (
                 self.body_list[planet].acceleration
             ) 
+            # print(self.body_list[planet].name)
+            # print(f"position: {self.body_list[planet].position}")
+            # print(f"velocity: {self.body_list[planet].velocity}")
+            # print(f"previous acceleration: {self.body_list[planet].previous_acceleration}")
+            # print(f"acceleration: {self.body_list[planet].acceleration}")
+            # print(f"next acceleration: {self.body_list[planet].next_acceleration}")
 
     def run_simulation(self):
 
         self.read_input_data()
         self.calc_initial_conditions()
 
-        # for timestep in range(self.num_iterations):
-        for timestep in range(1000):
-            print(f"timestep: {timestep}")
-            self.step_forward()
-            
+        for num_timestep in range(self.num_iterations):
+            #print(f"timestep: {num_timestep}")
 
-    
-    def step_forward(self):
+            self.step_forward(num_timestep)
+
+    def step_forward(self, timestep):
 
         for planet in range(len(self.body_list)):
+
+            # save old position for orbital period calc
+            old_position = self.body_list[planet].position.copy()
+
             # update the position
             self.body_list[planet].position = (
                 self.body_list[planet].update_position()
             )
+            # compare old position to new position and if y coordinate has 
+            # changed from negative to positive then save orbital period
+            if old_position[1] < 0 and self.body_list[planet].position[1] > 0:
+                if self.body_list[planet].orbital_period == 0:
+                    self.body_list[planet].orbital_period =  (
+                        round(timestep * self.timestep, 2)
+                    )
+                    print(f"{self.body_list[planet].name} orbital period: {self.body_list[planet].orbital_period} years")
+
             # append the new position to the list of positions
             self.body_list[planet].positions.append(
                 self.body_list[planet].position
@@ -88,6 +104,9 @@ class Simulation():
             self.body_list[planet].acceleration) = (
                 self.update_accelerations(planet)
             )
+
+    def determine_orbital_period(self, timestep):
+        pass
          
 
     def calc_acceleration_by_position(self, next_position):
@@ -98,12 +117,14 @@ class Simulation():
         acceleration is being calculated 
         """
         total_acceleration = np.zeros(2)
+        sun_position = self.body_list[0].position
+        # print(f"sun position: {sun_position}")
         
         for body in self.body_list:
             if np.array_equal(body.position, next_position):  # Skip self
                 continue
                 
-            r_ji = next_position - body.position
+            r_ji = next_position - body.position - sun_position
             r_mag = np.linalg.norm(r_ji)
             
             if r_mag > 0:  # Avoid division by zero
@@ -204,6 +225,8 @@ class Body():
         self.acceleration = np.zeros(2)
         self.next_acceleration = np.zeros(2)
         self.previous_acceleration = np.zeros(2)
+
+        self.orbital_period = 0
 
 
     def update_position(self):
