@@ -62,10 +62,16 @@ class Simulation():
         self.read_input_data()
         self.calc_initial_conditions()
 
+        print(f"initial potential energy: {self.calc_PE()}")
+        print(f"initial total energy: {self.calc_total_energy()}")
+
         for num_timestep in range(self.num_iterations):
             #print(f"timestep: {num_timestep}")
 
             self.step_forward(num_timestep)
+
+        print(f"final potential energy: {self.calc_PE()}")
+        print(f"final total energy: {self.calc_total_energy()}")
 
     def step_forward(self, timestep):
 
@@ -78,14 +84,8 @@ class Simulation():
             self.body_list[planet].position = (
                 self.body_list[planet].update_position()
             )
-            # compare old position to new position and if y coordinate has 
-            # changed from negative to positive then save orbital period
-            if old_position[1] < 0 and self.body_list[planet].position[1] > 0:
-                if self.body_list[planet].orbital_period == 0:
-                    self.body_list[planet].orbital_period =  (
-                        round(timestep * self.timestep, 2)
-                    )
-                    print(f"{self.body_list[planet].name} orbital period: {self.body_list[planet].orbital_period} years")
+            # check whether a planet has completed an orbital period
+            self.determine_orbital_period(timestep, old_position, planet)
 
             # append the new position to the list of positions
             self.body_list[planet].positions.append(
@@ -105,8 +105,21 @@ class Simulation():
                 self.update_accelerations(planet)
             )
 
-    def determine_orbital_period(self, timestep):
-        pass
+    def determine_orbital_period(self, timestep, old_position, planet):
+        """
+        compare old position to new position and if y coordinate has 
+        changed from negative to positive then save orbital period
+        """
+        if old_position[1] < 0 and self.body_list[planet].position[1] > 0:
+            if self.body_list[planet].orbital_period == 0:
+                self.body_list[planet].orbital_period =  (
+                    round(timestep * self.timestep, 3)
+                )
+                print(
+                    f"{self.body_list[planet].name} orbital period: "
+                    f"{self.body_list[planet].orbital_period} years"
+                    f" at timestep number {timestep} of size {self.timestep}"
+                )
          
 
     def calc_acceleration_by_position(self, next_position):
@@ -129,10 +142,7 @@ class Simulation():
             
             if r_mag > 0:  # Avoid division by zero
                 total_acceleration += (
-                    -self.grav_constant 
-                    * body.mass 
-                    * r_ji 
-                    / r_mag**3
+                    -self.grav_constant * body.mass * r_ji / r_mag**3
                 )
         
         return total_acceleration
@@ -185,11 +195,69 @@ class Simulation():
         
         plt.show()
 
-    def calc_PE():
-        pass
+    def calc_PE(self):
 
-    def calc_total_energy():
-        pass
+        # chatgpt
+        # sun_position = self.body_list[0].position
+        # total_potential = 0
+
+        # for i, body in enumerate(self.body_list):
+        #     for j, other_body in enumerate(self.body_list):
+        #         if i >= j:  # Avoid double counting and self-interaction
+        #             continue
+
+        #         r_ij = body.position - other_body.position - sun_position
+        #         r_mag = np.linalg.norm(r_ij)
+
+        #         if r_mag > 0:
+        #             total_potential += -self.grav_constant * body.mass * other_body.mass / r_mag
+
+        # return total_potential
+    
+
+        # deepseek
+        # total = 0.0
+        # for i in range(len(self.body_list)):
+        #     for j in range(i + 1, len(self.body_list)):  # Unique pairs
+        #         r_ij = np.linalg.norm(self.body_list[i].position - self.body_list[j].position)
+        #         total -= self.grav_constant * self.body_list[i].mass * self.body_list[j].mass / r_ij
+        # return total / 2
+
+
+        # my code
+        total_potenital = 0
+        sun_position = self.body_list[0].position
+
+        for body in self.body_list:
+            for other_body in self.body_list:
+                if np.array_equal(body.position, other_body.position):
+                    continue
+
+                r_ij = body.position - other_body.position - sun_position
+                r_mag = np.linalg.norm(r_ij)
+
+                if r_mag > 0:
+                    total_potenital += (
+                        self.grav_constant * body.mass * other_body.mass / r_mag
+                    ) / -2
+        return total_potenital
+
+    def calc_total_energy(self):
+
+        total_potential = self.calc_PE()
+        total_kintetic = 0
+
+        for body in self.body_list:
+            total_kintetic += body.calc_KE()
+
+        print(f"kinetic energy: {total_kintetic}")
+
+        total_energy = total_kintetic + total_potential
+
+        return total_energy
+
+
+        
 
 
 class Body():
@@ -248,10 +316,8 @@ class Body():
         return next_velocity
 
     def calc_KE(self):
-        pass
-
-    def check_orbital_period():
-        pass
+        kinetic_energy = self.mass * (np.linalg.norm(self.velocity) ** 2)
+        return kinetic_energy
 
 def main():
 
