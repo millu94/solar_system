@@ -133,7 +133,7 @@ class Simulation():
         """
         total_acceleration = np.zeros(2)
         sun_position = self.body_list[0].position
-        # print(f"sun position: {sun_position}")
+        #print(f"sun position: {sun_position}")
         
         for body in self.body_list:
             if np.array_equal(body.position, next_position):  # Skip self

@@ -12,5 +12,3 @@ planets = [
     {"name": "Neptune", "mass": 17, "r": 30.1}
 ]
 
-total_pe = -G * M_sun * sum(p["mass"] / p["r"] for p in planets)
-print(total_pe)  # Output: ~-11.0
