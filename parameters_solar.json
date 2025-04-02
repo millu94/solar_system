@@ -1,6 +1,6 @@
 {
     "num_iterations": 100000,
-    "timestep": 0.01,
+    "timestep": 0.001,
     "grav_const": 1.18638e-4,
     "bodies":
     [

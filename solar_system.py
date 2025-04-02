@@ -62,16 +62,18 @@ class Simulation():
         self.read_input_data()
         self.calc_initial_conditions()
 
-        print(f"initial potential energy: {self.calc_PE()}")
-        print(f"initial total energy: {self.calc_total_energy()}")
+        #print(f"initial potential energy: {self.calc_PE()}")
+        print(f"initial total energy: {self.calc_total_energy()} AU")
+        print(f"initial total energy: {self.calc_total_energy() * 4.47e37} J")
 
         for num_timestep in range(self.num_iterations):
             #print(f"timestep: {num_timestep}")
 
             self.step_forward(num_timestep)
 
-        print(f"final potential energy: {self.calc_PE()}")
-        print(f"final total energy: {self.calc_total_energy()}")
+        #print(f"final potential energy: {self.calc_PE()}")
+        print(f"final total energy: {self.calc_total_energy()} AU")
+        print(f"final total energy: {self.calc_total_energy() * 4.47e37} J")
 
     def step_forward(self, timestep):
 
@@ -250,7 +252,7 @@ class Simulation():
         for body in self.body_list:
             total_kintetic += body.calc_KE()
 
-        print(f"kinetic energy: {total_kintetic}")
+        #print(f"kinetic energy: {total_kintetic}")
 
         total_energy = total_kintetic + total_potential
 
