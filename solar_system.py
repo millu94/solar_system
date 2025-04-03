@@ -86,7 +86,10 @@ class Simulation():
             )
             # calculate the next acceleration
             self.body_list[planet].next_acceleration = (
-                self.calc_acceleration_by_index(planet)
+                self.calc_acceleration_by_position(
+                    self.body_list[planet].position
+                )
+                # self.calc_acceleration_by_index(planet)
             )
             # update the velocity
             self.body_list[planet].velocity = (
@@ -138,13 +141,13 @@ class Simulation():
         
         return total_acceleration
 
-    def calc_acceleration_by_index(self, body_index):
-        """
-        
-        """
-        return self.calc_acceleration_by_position(
-            self.body_list[body_index].position
-        )
+    # def calc_acceleration_by_index(self, body_index):
+    #     """
+
+    #     """
+    #     return self.calc_acceleration_by_position(
+    #         self.body_list[body_index].position
+    #     )
 
     def update_accelerations(self, planet):
         """
