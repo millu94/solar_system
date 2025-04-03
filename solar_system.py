@@ -20,7 +20,9 @@ class Simulation():
         self.patch_list = []
 
     def read_input_data(self):
-        # body_object_list = []
+        """
+        Reads input data from parameters_solar.json
+        """
         for body in parameters_solar['bodies']:
             body_object = Body(
                 body['name'], 
@@ -31,25 +33,22 @@ class Simulation():
             self.body_list.append(body_object)
 
     def calc_initial_conditions(self):
+        """
+        For first iteration the previous acceleration is set to the current
+        acceleration, which is calculated using initial positions.
+        """
 
         for planet in range(len(self.body_list)):
-            # use position-based version for initialisation
-            self.body_list[planet].next_acceleration = (
+            # calculates current acceleration
+            self.body_list[planet].acceleration = (
                 self.calc_acceleration_by_position(
                     self.body_list[planet].position
                 )
             )
-
-            (self.body_list[planet].previous_acceleration, 
-            self.body_list[planet].acceleration) = self.update_accelerations(
-                planet
-            )
-
-            # set previous acceleration to current acceleration for 
-            # inital conditions 
+            # sets previous acceleration to current acceleration
             self.body_list[planet].previous_acceleration = (
                 self.body_list[planet].acceleration
-            ) 
+            )
 
     def run_simulation(self):
 
@@ -67,6 +66,11 @@ class Simulation():
         print(f"final total energy: {self.calc_total_energy() * 4.47e37} J")
 
     def step_forward(self, timestep):
+        """
+        Calls several functions to move each of the planets forward by one 
+        timestep based on their positions, velocities and past current and 
+        future accelerations, all determined on their relation to each other
+        """
 
         for planet in range(len(self.body_list)):
 
@@ -103,8 +107,8 @@ class Simulation():
 
     def determine_orbital_period(self, timestep, old_position, planet):
         """
-        compare old position to new position and if y coordinate has 
-        changed from negative to positive then save orbital period
+        Compare old position to new position and if y coordinate has 
+        changed from negative to positive then save orbital period.
         """
         if old_position[1] < 0 and self.body_list[planet].position[1] > 0:
             if self.body_list[planet].orbital_period == 0:
@@ -120,9 +124,9 @@ class Simulation():
 
     def calc_acceleration_by_position(self, next_position):
         """
-        calculates net acceleration from body i on all other bodies j
-        intially, next_position is the orbital radius of the planet whose
-        acceleration is being calculated 
+        Calculates net acceleration from body i on all other bodies j,
+        intially next_position is the orbital radius of the planet whose
+        acceleration is being calculated. 
         """
         total_acceleration = np.zeros(2)
         sun_position = self.body_list[0].position
@@ -153,13 +157,16 @@ class Simulation():
         """
         Sets previous acceleration to equal the current acceleration and 
         current acceleration to next acceleration, both values in turn used by
-        update_position()
+        update_position().
         """
         prev_a = self.body_list[planet].acceleration.copy()
         new_a = self.body_list[planet].next_acceleration
         return prev_a, new_a
     
     def visualise_orbits(self):
+        """
+        Displays the orbits statically using matplotlib.pyplot
+        """
         plt.figure(figsize=(10, 10))
         ax = plt.gca()
         
@@ -188,10 +195,10 @@ class Simulation():
         plt.ylabel('Y Position (AU)')
         plt.legend(loc='upper right')
         
-        # Set limits based on maximum orbital radius
-        # max_radius = max(body.orbital_radius for body in self.body_list)
-        # plt.xlim(-max_radius*1.1, max_radius*1.1)
-        # plt.ylim(-max_radius*1.1, max_radius*1.1)
+        # Ensures display remains centred based on max radius
+        max_radius = max(body.orbital_radius for body in self.body_list)
+        plt.xlim(-max_radius*1.1, max_radius*1.1)
+        plt.ylim(-max_radius*1.1, max_radius*1.1)
         
         plt.show()
 
