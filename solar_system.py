@@ -46,32 +46,23 @@ class Simulation():
             )
 
             # set previous acceleration to current acceleration for 
-            # inital condition 
+            # inital conditions 
             self.body_list[planet].previous_acceleration = (
                 self.body_list[planet].acceleration
             ) 
-            # print(self.body_list[planet].name)
-            # print(f"position: {self.body_list[planet].position}")
-            # print(f"velocity: {self.body_list[planet].velocity}")
-            # print(f"previous acceleration: {self.body_list[planet].previous_acceleration}")
-            # print(f"acceleration: {self.body_list[planet].acceleration}")
-            # print(f"next acceleration: {self.body_list[planet].next_acceleration}")
 
     def run_simulation(self):
 
         self.read_input_data()
         self.calc_initial_conditions()
 
-        #print(f"initial potential energy: {self.calc_PE()}")
         print(f"initial total energy: {self.calc_total_energy()} AU")
         print(f"initial total energy: {self.calc_total_energy() * 4.47e37} J")
 
         for num_timestep in range(self.num_iterations):
             #print(f"timestep: {num_timestep}")
-
             self.step_forward(num_timestep)
 
-        #print(f"final potential energy: {self.calc_PE()}")
         print(f"final total energy: {self.calc_total_energy()} AU")
         print(f"final total energy: {self.calc_total_energy() * 4.47e37} J")
 
@@ -127,13 +118,11 @@ class Simulation():
     def calc_acceleration_by_position(self, next_position):
         """
         calculates net acceleration from body i on all other bodies j
-
         intially, next_position is the orbital radius of the planet whose
         acceleration is being calculated 
         """
         total_acceleration = np.zeros(2)
         sun_position = self.body_list[0].position
-        #print(f"sun position: {sun_position}")
         
         for body in self.body_list:
             if np.array_equal(body.position, next_position):  # Skip self
@@ -151,15 +140,18 @@ class Simulation():
 
     def calc_acceleration_by_index(self, body_index):
         """
-        Calculates acceleration for a specific body in body_list (used during 
-        simulation).
-        More efficient as it can access body properties directly.
+        
         """
         return self.calc_acceleration_by_position(
             self.body_list[body_index].position
         )
 
     def update_accelerations(self, planet):
+        """
+        Sets previous acceleration to equal the current acceleration and 
+        current acceleration to next acceleration, both values in turn used by
+        update_position()
+        """
         prev_a = self.body_list[planet].acceleration.copy()
         new_a = self.body_list[planet].next_acceleration
         return prev_a, new_a
@@ -182,7 +174,10 @@ class Simulation():
             plt.plot(x, y, color=body.colour, label=body.name, alpha=0.7)
             
             # Plot current position
-            plt.scatter(x[-1], y[-1], color=body.colour, s=100 if body.name.lower() == 'sun' else 30)
+            plt.scatter(
+                x[-1], y[-1], color=body.colour,
+                s=100 if body.name.lower() == 'sun' else 30
+            )
         
         # Set labels and legend
         plt.title('Solar System Simulation')
@@ -191,43 +186,18 @@ class Simulation():
         plt.legend(loc='upper right')
         
         # Set limits based on maximum orbital radius
-        max_radius = max(body.orbital_radius for body in self.body_list)
-        plt.xlim(-max_radius*1.1, max_radius*1.1)
-        plt.ylim(-max_radius*1.1, max_radius*1.1)
+        # max_radius = max(body.orbital_radius for body in self.body_list)
+        # plt.xlim(-max_radius*1.1, max_radius*1.1)
+        # plt.ylim(-max_radius*1.1, max_radius*1.1)
         
         plt.show()
 
     def calc_PE(self):
-
-        # chatgpt
-        # sun_position = self.body_list[0].position
-        # total_potential = 0
-
-        # for i, body in enumerate(self.body_list):
-        #     for j, other_body in enumerate(self.body_list):
-        #         if i >= j:  # Avoid double counting and self-interaction
-        #             continue
-
-        #         r_ij = body.position - other_body.position - sun_position
-        #         r_mag = np.linalg.norm(r_ij)
-
-        #         if r_mag > 0:
-        #             total_potential += -self.grav_constant * body.mass * other_body.mass / r_mag
-
-        # return total_potential
-    
-
-        # deepseek
-        # total = 0.0
-        # for i in range(len(self.body_list)):
-        #     for j in range(i + 1, len(self.body_list)):  # Unique pairs
-        #         r_ij = np.linalg.norm(self.body_list[i].position - self.body_list[j].position)
-        #         total -= self.grav_constant * self.body_list[i].mass * self.body_list[j].mass / r_ij
-        # return total / 2
-
-
-        # my code
-        total_potenital = 0
+        """
+        Calculates Potential Energy, which is the sum of potential energies
+        between each pair of bodies
+        """
+        total_potential = 0
         sun_position = self.body_list[0].position
 
         for body in self.body_list:
@@ -239,34 +209,30 @@ class Simulation():
                 r_mag = np.linalg.norm(r_ij)
 
                 if r_mag > 0:
-                    total_potenital += (
+                    total_potential += (
                         self.grav_constant * body.mass * other_body.mass / r_mag
                     ) / -2
-        return total_potenital
+        return total_potential
 
     def calc_total_energy(self):
-
+        """
+        Sums the total potential and kinetic energy
+        """
         total_potential = self.calc_PE()
         total_kintetic = 0
 
         for body in self.body_list:
             total_kintetic += body.calc_KE()
 
-        #print(f"kinetic energy: {total_kintetic}")
-
         total_energy = total_kintetic + total_potential
 
         return total_energy
-
-
-        
 
 
 class Body():
 
     def __init__(self, name, mass, orbital_radius, colour):
         self.timestep = parameters_solar['timestep']
-        # load each individual planet in
         self.name = name
         self.mass = mass
         self.orbital_radius = orbital_radius
@@ -275,7 +241,6 @@ class Body():
         # each planet has initial position velocity and current/previous 
         # acceleration
         self.position = np.array([orbital_radius, 0], dtype=float)
-        # print(f"initial position: {self.position}")
 
         #list of positions that will be graphically represented
         self.positions = [self.position.copy()]
@@ -290,7 +255,6 @@ class Body():
             initial_velocity = 0
         
         self.velocity = np.array([0, initial_velocity], dtype=float)
-        #print(f"initial velocity: {self.velocity}")
 
         self.acceleration = np.zeros(2)
         self.next_acceleration = np.zeros(2)
@@ -298,8 +262,11 @@ class Body():
 
         self.orbital_period = 0
 
-
     def update_position(self):
+        """
+        Updates position using current position and velocity, current and
+        previous acceleration, and timestep
+        """
         next_position = (
             self.position + (self.velocity * self.timestep) +
             (4 * self.acceleration - self.previous_acceleration) *
@@ -308,6 +275,10 @@ class Body():
         return next_position
 
     def update_velocity(self):
+        """
+        Updates the velocity of a particular body using previous, current, and
+        next acceleration values, as well as current velocity and timestep
+        """
         next_velocity = (
             self.velocity + (
                 2 * self.next_acceleration
@@ -318,8 +289,12 @@ class Body():
         return next_velocity
 
     def calc_KE(self):
+        """
+        Calculates Kinetic Energy for a particular body
+        """
         kinetic_energy = self.mass * (np.linalg.norm(self.velocity) ** 2)
         return kinetic_energy
+    
 
 def main():
 
@@ -335,13 +310,9 @@ def main():
 
     """
 
-    # default
-
     simulation = Simulation()
     simulation.run_simulation()
     simulation.visualise_orbits()
-    # print(f"The timestep is {parameters_solar['timestep']}")
-    # for body in parameters_solar['bodies']: print(f"{body['name']} has mass {body['mass']}")
 
 main()
 
