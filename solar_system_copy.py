@@ -172,6 +172,7 @@ class Simulation():
                     f"{self.body_list[planet].orbital_period} years"
                     f" at timestep number {timestep} of size {self.timestep}"
                 )
+
          
 
     def calc_acceleration_by_position(self, next_position):
