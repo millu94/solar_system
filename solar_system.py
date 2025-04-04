@@ -8,16 +8,23 @@ with open('parameters_solar.json') as f:
 
 class Simulation():
 
-    def __init__(self):
+    def __init__(self, integration_method):
         self.num_iterations = parameters_solar['num_iterations']
         self.timestep = parameters_solar['timestep']
         self.grav_constant = parameters_solar['grav_const']
         self.sun_mass = parameters_solar['bodies'][0]['mass']
+        self.integration_method = integration_method
 
         # holds the body objects
         self.body_list = []
         # patch list is for graphics
         self.patch_list = []
+
+        # New attributes for energy tracking
+        self.time_points = []
+        self.kinetic_energies = []
+        self.potential_energies = []
+        self.total_energies = []
 
     def read_input_data(self):
         """
@@ -64,6 +71,8 @@ class Simulation():
         print(f"final total energy: {self.calc_total_energy()} AU")
         print(f"final total energy: {self.calc_total_energy() * 4.47e37} J")
 
+        print(self.integration_method)
+
     def step_forward(self, timestep):
         """
         Calls several functions to move each of the planets forward by one 
@@ -71,37 +80,82 @@ class Simulation():
         future accelerations, all determined on their relation to each other
         """
 
+            # Record energies at each timestep
+        self.record_energies(timestep)
+
         for planet in range(len(self.body_list)):
 
             # save old position for orbital period calc
             old_position = self.body_list[planet].position.copy()
 
-            # update the position
-            self.body_list[planet].position = (
-                self.body_list[planet].update_position()
-            )
-            # check whether a planet has completed an orbital period
-            self.determine_orbital_period(timestep, old_position, planet)
+            if self.integration_method == "Beeman Method":
+                # update the position
+                self.body_list[planet].position = (
+                    self.body_list[planet].update_position()
+                )
+                # check whether a planet has completed an orbital period
+                self.determine_orbital_period(timestep, old_position, planet)
 
-            # append the new position to the list of positions
-            self.body_list[planet].positions.append(
-                self.body_list[planet].position
-            )
-            # calculate the next acceleration
-            self.body_list[planet].next_acceleration = (
-                self.calc_acceleration_by_position(
+                # append the new position to the list of positions
+                self.body_list[planet].positions.append(
                     self.body_list[planet].position
                 )
-            )
-            # update the velocity
-            self.body_list[planet].velocity = (
-                self.body_list[planet].update_velocity()
-            )
-            # update accelerations
-            (self.body_list[planet].previous_acceleration, 
-            self.body_list[planet].acceleration) = (
-                self.update_accelerations(planet)
-            )
+                # calculate the next acceleration
+                self.body_list[planet].next_acceleration = (
+                    self.calc_acceleration_by_position(
+                        self.body_list[planet].position
+                    )
+                )
+                # update the velocity
+                self.body_list[planet].velocity = (
+                    self.body_list[planet].update_velocity()
+                )
+                # update accelerations
+                (self.body_list[planet].previous_acceleration, 
+                self.body_list[planet].acceleration) = (
+                    self.update_accelerations(planet)
+                )
+
+            if self.integration_method == "Euler Cromer":
+                # Euler-Cromer method
+                (self.body_list[planet].velocity, 
+                self.body_list[planet].position)  = (
+                    self.body_list[planet].euler_cromer()
+                )
+                # check whether a planet has completed an orbital period
+                self.determine_orbital_period(timestep, old_position, planet)
+                
+                # append the new position to the list of positions
+                self.body_list[planet].positions.append(
+                    self.body_list[planet].position
+                )
+                # For Euler-Cromer, we just need current acceleration
+                self.body_list[planet].acceleration = (
+                    self.calc_acceleration_by_position(
+                        self.body_list[planet].position
+                    )
+                )
+
+            if self.integration_method == "Direct Euler":
+                # Direct Euler Method
+                (self.body_list[planet].position, 
+                 self.body_list[planet].velocity)  = (
+                    self.body_list[planet].direct_euler()
+                )
+                # check whether a planet has completed an orbital period
+                self.determine_orbital_period(timestep, old_position, planet)
+                
+                # append the new position to the list of positions
+                self.body_list[planet].positions.append(
+                    self.body_list[planet].position
+                )
+                # For Direct Euler, we just need current acceleration
+                self.body_list[planet].acceleration = (
+                    self.calc_acceleration_by_position(
+                        self.body_list[planet].position
+                    )
+                )
+
 
     def determine_orbital_period(self, timestep, old_position, planet):
         """
@@ -118,6 +172,7 @@ class Simulation():
                     f"{self.body_list[planet].orbital_period} years"
                     f" at timestep number {timestep} of size {self.timestep}"
                 )
+
          
 
     def calc_acceleration_by_position(self, next_position):
@@ -195,6 +250,47 @@ class Simulation():
         
         plt.show()
 
+    def plot_energy_conservation(self):
+        """
+        Plots kinetic, potential and total energy over time
+        """
+        plt.figure(figsize=(12, 6))
+        
+        # Convert time points to years
+        time_years = np.array(self.time_points)
+        
+        # Plot energies
+        plt.plot(time_years, self.kinetic_energies, label='Kinetic Energy')
+        plt.plot(
+            time_years, self.potential_energies, label='Potential Energy'
+        )
+        plt.plot(
+            time_years, self.total_energies,
+            label='Total Energy', linestyle='--'
+        )
+        
+        # Formatting
+        plt.title('Energy Conservation in Solar System Simulation')
+        plt.xlabel('Time (years)')
+        plt.ylabel('Energy (AU)')
+        plt.legend()
+        plt.grid(True)
+        
+        # Calculate and display energy variation
+        initial_energy = self.total_energies[0]
+        final_energy = self.total_energies[-1]
+        energy_variation = abs(
+            (final_energy - initial_energy) / initial_energy
+        ) * 100
+        
+        plt.figtext(0.5, 0.01, 
+                f"Total energy variation: {energy_variation:.2e}%", 
+                ha="center", fontsize=10,
+                bbox={"facecolor":"white", "alpha":0.5}
+        )
+        
+        plt.show()
+
     def calc_PE(self):
         """
         Calculates Potential Energy, which is the sum of potential energies
@@ -230,6 +326,21 @@ class Simulation():
         total_energy = total_kintetic + total_potential
 
         return total_energy
+    
+    def record_energies(self, timestep):
+        """
+        Records kinetic, potential and total energy at each timestep
+        """
+        ke = 0
+        for body in self.body_list:
+            ke += body.calc_KE()
+        pe = self.calc_PE()
+        total = ke + pe
+        
+        self.time_points.append(timestep * self.timestep)
+        self.kinetic_energies.append(ke)
+        self.potential_energies.append(pe)
+        self.total_energies.append(total)
 
 
 class Body():
@@ -276,6 +387,27 @@ class Body():
             self.timestep ** 2 / 6
         )
         return next_position
+    
+    def euler_cromer(self):
+        """
+        Updates velocity then uses new velocity to determine position, 
+        Euler-Cromer method
+        """
+        # First update velocity using current acceleration
+        next_velocity = self.velocity + self.acceleration * self.timestep
+        # Then update position using new velocity
+        next_position = self.position + next_velocity * self.timestep
+        
+        return next_velocity, next_position
+    
+    def direct_euler(self):
+        """
+        Updates position then velocity, Direct Euler method
+        """
+        next_position = self.position + self.velocity * self.timestep
+        next_velocity = self.velocity + self.acceleration * self.timestep
+
+        return next_position, next_velocity
 
     def update_velocity(self):
         """
@@ -301,23 +433,40 @@ class Body():
 
 def main():
 
-    """
+    print(
+        "Simulation of the Solar System using various numerical integration"
+        " techniques."
+        )
 
-    Upon running program, user is asked whether to use default parameters or 
-    enter custom
+    print("Choose an integration method:")
+    print("1. Beeman")
+    print("2. Euler-Cromer")
+    print("3. Direct Euler")
+    
+    # Get user input
+    while True:
+        choice = input("Enter your choice (1/2/3): ").strip()
+        if choice == '1':
+            method = "Beeman Method"
+            break
+        elif choice == '2':
+            method = "Euler Cromer"
+            break
+        elif choice == '3':
+            method = "Direct Euler"
+            break
+        else:
+            print("Invalid choice. Please enter 1, 2, or 3.")
 
-    default:
-
-    in order to run simulation there must be a list of body objects to pass to
-    simulation object
-
-    """
-
-    simulation = Simulation()
+    simulation = Simulation(method)
     simulation.run_simulation()
     simulation.visualise_orbits()
+    simulation.plot_energy_conservation() 
 
 main()
+
+if __name__ == "__main__":
+    main()
 
 
 

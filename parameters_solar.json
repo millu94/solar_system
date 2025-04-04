@@ -1,5 +1,5 @@
 {
-    "num_iterations": 100000,
+    "num_iterations": 10000,
     "timestep": 0.01,
     "grav_const": 1.18638e-4,
     "bodies":
